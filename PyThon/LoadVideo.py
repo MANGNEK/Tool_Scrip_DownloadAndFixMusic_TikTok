@@ -12,9 +12,6 @@ from pydub import AudioSegment
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 # ===== Cấu hình Chrome Driver =====
-options = webdriver.ChromeOptions()
-options.add_experimental_option("detach", True)
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
 
 # ===== Cấu hình đường dẫn FFMPEG =====
 FFMPEG_PATH = os.path.join(os.getcwd(), "ffmpeg", "bin", "ffmpeg.exe")
@@ -45,7 +42,7 @@ os.makedirs(download_folder, exist_ok=True)
 mp3_folder = os.path.join(os.getcwd(), "Converted_Audio")
 os.makedirs(mp3_folder, exist_ok=True)
 
-def download_tiktok_video(link, name, index):
+def download_tiktok_video(link, name, index, driver):
     driver.get("https://snaptik.app/vn2")
     
     try:
@@ -118,20 +115,62 @@ def fix_audio():
             except Exception as e:
                 print(f"❌ Lỗi khi xử lý {file_name}: {e}")
 
+def run_all():
+    print("\n🚀 Bắt đầu quy trình tự động!")
+    
+    # Bước 1: Tải video TikTok
+    print("\n🔹 Bước 1: Tải video TikTok...")
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless=new")  # Không mở UI
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--log-level=3")  # Giảm log không cần thiết
+    options.add_argument("--disable-software-rasterizer")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_experimental_option("detach", True)
+    driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    for name, links in data.items():
+        for i, link in enumerate(links):
+            download_tiktok_video(link, name, i, driver)
+    driver.quit()
+    print("✅ Hoàn tất tải video!")
+    
+    # Bước 2: Chuyển đổi video sang MP3
+    print("\n🔹 Bước 2: Chuyển đổi video sang MP3...")
+    convert_video_to_mp3()
+    print("✅ Hoàn tất chuyển đổi MP3!")
+    
+    # Bước 3: Fix âm thanh
+    print("\n🔹 Bước 3: Xử lý âm thanh...")
+    fix_audio()
+    print("✅ Hoàn tất xử lý âm thanh!")
+    
+    print("\n🎉 Toàn bộ quy trình đã hoàn thành!")
+
 def main():
     while True:
         print("\n📌 CHỌN CHỨC NĂNG:")
         print("1 - Tải video TikTok")
         print("2 - Chuyển đổi video sang MP3")
         print("3 - Fix âm thanh (fade in/out + chuẩn hóa)")
+        print("4 - Chạy toàn bộ quá trình (Tải video -> MP3 -> Fix âm thanh)")
         print("0 - Thoát")
-        choice = input("Nhập lựa chọn (0/1/2/3): ")
+        choice = input("Nhập lựa chọn (0/1/2/3/4): ")
         
         if choice == "1":
-            #driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+            print("👋 Đang Khởi Động .")
+            options = webdriver.ChromeOptions()
+            options.add_argument("--headless=new")  # Không mở UI
+            options.add_argument("--disable-gpu")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--log-level=3")  # Giảm log không cần thiết
+            options.add_argument("--disable-software-rasterizer")
+            options.add_argument("--disable-dev-shm-usage")
+            options.add_experimental_option("detach", True)
+            driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
             for name, links in data.items():
                 for i, link in enumerate(links):
-                    download_tiktok_video(link, name, i)
+                    download_tiktok_video(link, name, i, driver)
             driver.quit()
             print("✅ Hoàn tất tải video!")
         
@@ -143,11 +182,15 @@ def main():
             fix_audio()
             print("✅ Hoàn tất xử lý âm thanh!")
         
+        elif choice == "4":
+            run_all()
+        
         elif choice == "0":
             print("👋 Thoát chương trình.")
             break
         else:
             print("❌ Lựa chọn không hợp lệ!")
+
 
 if __name__ == "__main__":
     main()
